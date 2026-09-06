@@ -1,13 +1,16 @@
 import { Collection, GenerationRecord, Sketch, SketchGroup } from '../../types';
 import { generateId } from '../../utils/idGenerator';
+import * as supabaseManager from './supabaseStorageManager';
 
 const COLLECTIONS_KEY = 'sketches:collections';
 const VOTES_PREFIX = 'sketches:votes';
-const HISTORY_PREFIX = 'sketches:history';
-const SHARE_TOKENS_KEY = 'sketches:shareTokens';
 
-// Collections
-export function getAllCollections(): Collection[] {
+// Determine which backend to use
+const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true';
+
+// ===== localStorage fallback implementations =====
+
+function localGetAllCollections(): Collection[] {
   try {
     const data = localStorage.getItem(COLLECTIONS_KEY);
     if (!data) return [];
@@ -29,13 +32,13 @@ export function getAllCollections(): Collection[] {
   }
 }
 
-export function getCollection(id: string): Collection | null {
-  const collections = getAllCollections();
+function localGetCollection(id: string): Collection | null {
+  const collections = localGetAllCollections();
   return collections.find((c) => c.id === id) || null;
 }
 
-export function saveCollection(collection: Collection): void {
-  const collections = getAllCollections();
+function localSaveCollection(collection: Collection): void {
+  const collections = localGetAllCollections();
   const index = collections.findIndex((c) => c.id === collection.id);
   if (index >= 0) {
     collections[index] = collection;
@@ -45,15 +48,12 @@ export function saveCollection(collection: Collection): void {
   localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collections));
 }
 
-export function deleteCollection(id: string): void {
-  const collections = getAllCollections().filter((c) => c.id !== id);
+function localDeleteCollection(id: string): void {
+  const collections = localGetAllCollections().filter((c) => c.id !== id);
   localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collections));
 }
 
-export function createCollection(
-  title: string,
-  prompt: string
-): Collection {
+function localCreateCollection(title: string, prompt: string): Collection {
   const collection: Collection = {
     id: generateId('col'),
     title,
@@ -69,13 +69,12 @@ export function createCollection(
       generationHistory: [],
     },
   };
-  saveCollection(collection);
+  localSaveCollection(collection);
   return collection;
 }
 
-// Groups
-export function addGroup(collectionId: string, title: string): SketchGroup {
-  const collection = getCollection(collectionId);
+function localAddGroup(collectionId: string, title: string): SketchGroup {
+  const collection = localGetCollection(collectionId);
   if (!collection) throw new Error(`Collection ${collectionId} not found`);
 
   const group: SketchGroup = {
@@ -87,16 +86,12 @@ export function addGroup(collectionId: string, title: string): SketchGroup {
 
   collection.groups.push(group);
   collection.updatedAt = new Date();
-  saveCollection(collection);
+  localSaveCollection(collection);
   return group;
 }
 
-export function updateGroup(
-  collectionId: string,
-  groupId: string,
-  title: string
-): void {
-  const collection = getCollection(collectionId);
+function localUpdateGroup(collectionId: string, groupId: string, title: string): void {
+  const collection = localGetCollection(collectionId);
   if (!collection) throw new Error(`Collection ${collectionId} not found`);
 
   const group = collection.groups.find((g) => g.id === groupId);
@@ -104,41 +99,33 @@ export function updateGroup(
 
   group.title = title;
   collection.updatedAt = new Date();
-  saveCollection(collection);
+  localSaveCollection(collection);
 }
 
-export function deleteGroup(collectionId: string, groupId: string): void {
-  const collection = getCollection(collectionId);
+function localDeleteGroup(collectionId: string, groupId: string): void {
+  const collection = localGetCollection(collectionId);
   if (!collection) throw new Error(`Collection ${collectionId} not found`);
 
   collection.groups = collection.groups.filter((g) => g.id !== groupId);
   collection.updatedAt = new Date();
-  saveCollection(collection);
+  localSaveCollection(collection);
 }
 
-// Sketches
-export function getSketches(collectionId: string): Sketch[] {
-  const collection = getCollection(collectionId);
+function localGetSketches(collectionId: string): Sketch[] {
+  const collection = localGetCollection(collectionId);
   if (!collection) return [];
 
   const allSketches: Sketch[] = [];
-  const collections = getAllCollections();
-
-  for (const col of collections) {
-    if (col.id === collectionId) {
-      for (const group of col.groups) {
-        const sketches = group.sketchIds.map((sketchId) =>
-          loadSketch(collectionId, sketchId)
-        );
-        allSketches.push(...sketches.filter((s): s is Sketch => s !== null));
-      }
+  for (const group of collection.groups) {
+    for (const sketchId of group.sketchIds) {
+      const sketch = localLoadSketch(collectionId, sketchId);
+      if (sketch) allSketches.push(sketch);
     }
   }
-
   return allSketches;
 }
 
-function loadSketch(collectionId: string, sketchId: string): Sketch | null {
+function localLoadSketch(collectionId: string, sketchId: string): Sketch | null {
   try {
     const data = localStorage.getItem(`sketches:sketch:${sketchId}`);
     if (!data) return null;
@@ -152,10 +139,10 @@ function loadSketch(collectionId: string, sketchId: string): Sketch | null {
   }
 }
 
-export function saveSketch(sketch: Sketch): void {
+function localSaveSketch(sketch: Sketch): void {
   localStorage.setItem(`sketches:sketch:${sketch.id}`, JSON.stringify(sketch));
 
-  const collection = getCollection(sketch.collectionId);
+  const collection = localGetCollection(sketch.collectionId);
   if (!collection) return;
 
   const group = collection.groups.find((g) => g.id === sketch.groupId);
@@ -166,12 +153,12 @@ export function saveSketch(sketch: Sketch): void {
       0
     );
     collection.updatedAt = new Date();
-    saveCollection(collection);
+    localSaveCollection(collection);
   }
 }
 
-export function deleteSketch(collectionId: string, sketchId: string): void {
-  const collection = getCollection(collectionId);
+function localDeleteSketch(collectionId: string, sketchId: string): void {
+  const collection = localGetCollection(collectionId);
   if (!collection) return;
 
   for (const group of collection.groups) {
@@ -183,12 +170,11 @@ export function deleteSketch(collectionId: string, sketchId: string): void {
     0
   );
   collection.updatedAt = new Date();
-  saveCollection(collection);
+  localSaveCollection(collection);
   localStorage.removeItem(`sketches:sketch:${sketchId}`);
 }
 
-// Votes
-export function getVoteCount(sketchId: string): number {
+function localGetVoteCount(sketchId: string): number {
   try {
     const data = localStorage.getItem(`${VOTES_PREFIX}:${sketchId}`);
     return data ? parseInt(data, 10) : 0;
@@ -197,32 +183,31 @@ export function getVoteCount(sketchId: string): number {
   }
 }
 
-export function addVote(collectionId: string, sketchId: string): number {
-  const current = getVoteCount(sketchId);
+function localAddVote(collectionId: string, sketchId: string): number {
+  const current = localGetVoteCount(sketchId);
   const newCount = current + 1;
   localStorage.setItem(`${VOTES_PREFIX}:${sketchId}`, String(newCount));
 
-  const collection = getCollection(collectionId);
+  const collection = localGetCollection(collectionId);
   if (collection) {
     collection.metadata.totalVotes = 0;
-    const sketches = getSketches(collectionId);
+    const sketches = localGetSketches(collectionId);
     collection.metadata.totalVotes = sketches.reduce(
-      (sum, s) => sum + getVoteCount(s.id),
+      (sum, s) => sum + localGetVoteCount(s.id),
       0
     );
     collection.updatedAt = new Date();
-    saveCollection(collection);
+    localSaveCollection(collection);
   }
 
   return newCount;
 }
 
-// Generation history
-export function addGenerationRecord(
+function localAddGenerationRecord(
   collectionId: string,
   record: Omit<GenerationRecord, 'id' | 'timestamp'>
 ): void {
-  const collection = getCollection(collectionId);
+  const collection = localGetCollection(collectionId);
   if (!collection) return;
 
   const generationRecord: GenerationRecord = {
@@ -234,24 +219,161 @@ export function addGenerationRecord(
   collection.metadata.generationHistory.push(generationRecord);
   collection.metadata.ideaCount += record.ideaCount;
   collection.updatedAt = new Date();
-  saveCollection(collection);
+  localSaveCollection(collection);
 }
 
-// Sharing
-export function generateShareToken(collectionId: string): string {
-  const collection = getCollection(collectionId);
+function localGenerateShareToken(collectionId: string): string {
+  const collection = localGetCollection(collectionId);
   if (!collection) throw new Error(`Collection ${collectionId} not found`);
 
   if (!collection.shareToken) {
     collection.shareToken = generateId('share');
     collection.isPublished = true;
-    saveCollection(collection);
+    localSaveCollection(collection);
   }
 
   return collection.shareToken;
 }
 
-export function getCollectionByShareToken(token: string): Collection | null {
-  const collections = getAllCollections();
+function localGetCollectionByShareToken(token: string): Collection | null {
+  const collections = localGetAllCollections();
   return collections.find((c) => c.shareToken === token) || null;
+}
+
+// ===== Public API =====
+
+export async function getAllCollections(): Promise<Collection[]> {
+  if (USE_SUPABASE) {
+    return supabaseManager.getAllCollections();
+  }
+  return localGetAllCollections();
+}
+
+export async function getCollection(id: string): Promise<Collection | null> {
+  if (USE_SUPABASE) {
+    return supabaseManager.getCollection(id);
+  }
+  return localGetCollection(id);
+}
+
+export async function saveCollection(collection: Collection): Promise<void> {
+  if (USE_SUPABASE) {
+    return supabaseManager.saveCollection(collection);
+  }
+  localSaveCollection(collection);
+}
+
+export async function deleteCollection(id: string): Promise<void> {
+  if (USE_SUPABASE) {
+    return supabaseManager.deleteCollection(id);
+  }
+  localDeleteCollection(id);
+}
+
+export async function createCollection(
+  title: string,
+  prompt: string
+): Promise<Collection> {
+  if (USE_SUPABASE) {
+    return supabaseManager.createCollection(title, prompt);
+  }
+  return localCreateCollection(title, prompt);
+}
+
+export async function addGroup(
+  collectionId: string,
+  title: string
+): Promise<SketchGroup> {
+  if (USE_SUPABASE) {
+    return supabaseManager.addGroup(collectionId, title);
+  }
+  return localAddGroup(collectionId, title);
+}
+
+export async function updateGroup(
+  collectionId: string,
+  groupId: string,
+  title: string
+): Promise<void> {
+  if (USE_SUPABASE) {
+    return supabaseManager.updateGroup(collectionId, groupId, title);
+  }
+  localUpdateGroup(collectionId, groupId, title);
+}
+
+export async function deleteGroup(
+  collectionId: string,
+  groupId: string
+): Promise<void> {
+  if (USE_SUPABASE) {
+    return supabaseManager.deleteGroup(collectionId, groupId);
+  }
+  localDeleteGroup(collectionId, groupId);
+}
+
+export async function getSketches(collectionId: string): Promise<Sketch[]> {
+  if (USE_SUPABASE) {
+    return supabaseManager.getSketches(collectionId);
+  }
+  return localGetSketches(collectionId);
+}
+
+export async function saveSketch(sketch: Sketch): Promise<void> {
+  if (USE_SUPABASE) {
+    return supabaseManager.saveSketch(sketch);
+  }
+  localSaveSketch(sketch);
+}
+
+export async function deleteSketch(
+  collectionId: string,
+  sketchId: string
+): Promise<void> {
+  if (USE_SUPABASE) {
+    return supabaseManager.deleteSketch(collectionId, sketchId);
+  }
+  localDeleteSketch(collectionId, sketchId);
+}
+
+export async function getVoteCount(sketchId: string): Promise<number> {
+  if (USE_SUPABASE) {
+    return supabaseManager.getVoteCount(sketchId);
+  }
+  return localGetVoteCount(sketchId);
+}
+
+export async function addVote(
+  collectionId: string,
+  sketchId: string
+): Promise<number> {
+  if (USE_SUPABASE) {
+    return supabaseManager.addVote(collectionId, sketchId);
+  }
+  return localAddVote(collectionId, sketchId);
+}
+
+export async function addGenerationRecord(
+  collectionId: string,
+  record: Omit<GenerationRecord, 'id' | 'timestamp'>
+): Promise<void> {
+  if (USE_SUPABASE) {
+    return supabaseManager.addGenerationRecord(collectionId, record);
+  }
+  localAddGenerationRecord(collectionId, record);
+}
+
+export async function generateShareToken(collectionId: string): Promise<string> {
+  if (USE_SUPABASE) {
+    return supabaseManager.generateShareToken(collectionId);
+  }
+  return localGenerateShareToken(collectionId);
+}
+
+export async function getCollectionByShareToken(
+  token: string
+): Promise<Collection | null> {
+  if (USE_SUPABASE) {
+    return supabaseManager.getCollectionByShareToken(token);
+  }
+  return localGetCollectionByShareToken(token);
 }

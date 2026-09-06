@@ -14,15 +14,31 @@ export const SharedCollection: React.FC<SharedCollectionProps> = ({ token }) => 
   const [sketches, setSketches] = useState<Sketch[]>([]);
   const [sortBy, setSortBy] = useState<'default' | 'votes'>('default');
   const [loading, setLoading] = useState(true);
+  const [voteCounts, setVoteCounts] = useState<{ [sketchId: string]: number }>({});
 
   useEffect(() => {
-    const col = getCollectionByShareToken(token);
-    if (col) {
-      setCollection(col);
-      const allSketches = getSketches(col.id);
-      setSketches(allSketches);
-    }
-    setLoading(false);
+    const loadCollection = async () => {
+      try {
+        const col = await getCollectionByShareToken(token);
+        if (col) {
+          setCollection(col);
+          const allSketches = await getSketches(col.id);
+          setSketches(allSketches);
+
+          // Load vote counts for all sketches
+          const votes: { [sketchId: string]: number } = {};
+          for (const sketch of allSketches) {
+            votes[sketch.id] = await getVoteCount(sketch.id);
+          }
+          setVoteCounts(votes);
+        }
+      } catch (err) {
+        console.error('Failed to load collection:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCollection();
   }, [token]);
 
   if (loading) {
@@ -39,7 +55,7 @@ export const SharedCollection: React.FC<SharedCollectionProps> = ({ token }) => 
   }
 
   const sortedSketches = sortBy === 'votes'
-    ? [...sketches].sort((a, b) => getVoteCount(b.id) - getVoteCount(a.id))
+    ? [...sketches].sort((a, b) => (voteCounts[b.id] || 0) - (voteCounts[a.id] || 0))
     : sketches;
 
   const sketchesByGroup: { [groupId: string]: Sketch[] } = {};
@@ -50,9 +66,13 @@ export const SharedCollection: React.FC<SharedCollectionProps> = ({ token }) => 
     sketchesByGroup[sketch.groupId].push(sketch);
   });
 
-  const handleVote = (sketchId: string) => {
-    addVote(collection.id, sketchId);
-    setSketches(getSketches(collection.id));
+  const handleVote = async (sketchId: string) => {
+    try {
+      const newCount = await addVote(collection.id, sketchId);
+      setVoteCounts(prev => ({ ...prev, [sketchId]: newCount }));
+    } catch (err) {
+      console.error('Failed to vote:', err);
+    }
   };
 
   return (
@@ -97,7 +117,7 @@ export const SharedCollection: React.FC<SharedCollectionProps> = ({ token }) => 
                         className="vote-button"
                         onClick={() => handleVote(sketch.id)}
                       >
-                        ▲ {getVoteCount(sketch.id)}
+                        ▲ {voteCounts[sketch.id] || 0}
                       </button>
                     </div>
                   </div>

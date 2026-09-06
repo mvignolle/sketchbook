@@ -3,7 +3,7 @@ import { saveCollection, addGroup, saveSketch } from '../services/storage/storag
 import { generateSketches } from '../services/generation/variationGenerator';
 import { generateId } from './idGenerator';
 
-export function seedExampleCollections() {
+export async function seedExampleCollections() {
   // Check if data already exists
   const existing = localStorage.getItem('sketches:collections');
   if (existing) return;
@@ -26,7 +26,7 @@ export function seedExampleCollections() {
     },
   ];
 
-  examples.forEach((example) => {
+  for (const example of examples) {
     const collection: Collection = {
       id: generateId('col'),
       title: example.title,
@@ -59,15 +59,15 @@ export function seedExampleCollections() {
       example.ideaCount
     );
 
-    sketches.forEach((sketch, i) => {
+    for (const sketch of sketches) {
       sketch.createdAt = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000);
-      saveSketch(sketch);
+      await saveSketch(sketch);
       group.sketchIds.push(sketch.id);
-    });
+    }
 
     collection.metadata.totalSketches = sketches.length;
     collection.metadata.ideaCount = example.ideaCount;
 
-    saveCollection(collection);
-  });
+    await saveCollection(collection);
+  }
 }

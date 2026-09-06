@@ -14,8 +14,18 @@ export const CollectionsHome: React.FC<CollectionsHomeProps> = ({ onNavigate }) 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setCollections(getAllCollections());
-    setLoading(false);
+    const loadCollections = async () => {
+      try {
+        const data = await getAllCollections();
+        setCollections(data);
+      } catch (err) {
+        console.error('Failed to load collections:', err);
+        setCollections([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCollections();
   }, []);
 
   const handleCreateNew = () => {

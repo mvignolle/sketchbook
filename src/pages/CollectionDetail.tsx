@@ -20,14 +20,25 @@ export const CollectionDetail: React.FC<CollectionDetailProps> = ({
   const [sortBy, setSortBy] = useState<'default' | 'votes'>('default');
   const [shareModal, setShareModal] = useState(false);
   const [shareLink, setShareLink] = useState('');
+  const [voteCounts, setVoteCounts] = useState<{ [sketchId: string]: number }>({});
 
   useEffect(() => {
-    const col = getCollection(collectionId);
-    if (col) {
-      setCollection(col);
-      const allSketches = getSketches(collectionId);
-      setSketches(allSketches);
-    }
+    const loadCollection = async () => {
+      const col = await getCollection(collectionId);
+      if (col) {
+        setCollection(col);
+        const allSketches = await getSketches(collectionId);
+        setSketches(allSketches);
+
+        // Load vote counts for all sketches
+        const votes: { [sketchId: string]: number } = {};
+        for (const sketch of allSketches) {
+          votes[sketch.id] = await getVoteCount(sketch.id);
+        }
+        setVoteCounts(votes);
+      }
+    };
+    loadCollection();
   }, [collectionId]);
 
   if (!collection) {
@@ -35,7 +46,7 @@ export const CollectionDetail: React.FC<CollectionDetailProps> = ({
   }
 
   const sortedSketches = sortBy === 'votes'
-    ? [...sketches].sort((a, b) => getVoteCount(b.id) - getVoteCount(a.id))
+    ? [...sketches].sort((a, b) => (voteCounts[b.id] || 0) - (voteCounts[a.id] || 0))
     : sketches;
 
   const sketchesByGroup: { [groupId: string]: Sketch[] } = {};
@@ -46,15 +57,24 @@ export const CollectionDetail: React.FC<CollectionDetailProps> = ({
     sketchesByGroup[sketch.groupId].push(sketch);
   });
 
-  const handleVote = (sketchId: string) => {
-    addVote(collectionId, sketchId);
-    setSketches(getSketches(collectionId));
+  const handleVote = async (sketchId: string) => {
+    try {
+      const newCount = await addVote(collectionId, sketchId);
+      setVoteCounts(prev => ({ ...prev, [sketchId]: newCount }));
+    } catch (err) {
+      console.error('Failed to vote:', err);
+    }
   };
 
-  const handleShare = () => {
-    const token = generateShareToken(collectionId);
-    setShareLink(`${window.location.origin}?share=${token}`);
-    setShareModal(true);
+  const handleShare = async () => {
+    try {
+      const token = await generateShareToken(collectionId);
+      setShareLink(`${window.location.origin}?share=${token}`);
+      setShareModal(true);
+    } catch (err) {
+      console.error('Failed to generate share token:', err);
+      alert('Error generating share link');
+    }
   };
 
   const copyToClipboard = () => {
@@ -128,7 +148,7 @@ export const CollectionDetail: React.FC<CollectionDetailProps> = ({
                           handleVote(sketch.id);
                         }}
                       >
-                        ▲ {getVoteCount(sketch.id)}
+                        ▲ {voteCounts[sketch.id] || 0}
                       </button>
                     </div>
                   </div>
