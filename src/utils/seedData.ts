@@ -1,5 +1,5 @@
-import { Collection } from '../types';
-import { saveCollection, addGroup, saveSketch } from '../services/storage/storageManager';
+import type { Collection } from '../types';
+import { saveCollection, saveSketch } from '../services/storage/storageManager';
 import { generateSketches } from '../services/generation/variationGenerator';
 import { generateId } from './idGenerator';
 

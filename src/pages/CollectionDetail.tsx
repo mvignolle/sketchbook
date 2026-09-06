@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Collection, Sketch } from '../types';
+import { useState, useEffect } from 'react';
+import type { Collection, Sketch } from '../types';
 import { getCollection, getSketches, getVoteCount, addVote, generateShareToken } from '../services/storage/storageManager';
 import { Button } from '../components/ui/Button';
 import { WireframeContainer } from '../components/wireframes/WireframeContainer';

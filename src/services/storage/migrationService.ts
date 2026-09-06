@@ -1,6 +1,5 @@
 import { supabase } from '../supabase/client';
 import { getOrCreateSession } from '../supabase/sessionManager';
-import * as storageManager from './storageManager';
 
 interface MigrationSummary {
   collectionsCount: number;

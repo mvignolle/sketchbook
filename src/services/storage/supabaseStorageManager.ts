@@ -1,4 +1,4 @@
-import { Collection, GenerationRecord, Sketch, SketchGroup } from '../../types';
+import type { Collection, GenerationRecord, Sketch, SketchGroup } from '../../types';
 import { generateId } from '../../utils/idGenerator';
 import { supabase } from '../supabase/client';
 import { getCurrentSession } from '../supabase/sessionManager';

@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Collection, Sketch } from '../types';
+import { useState, useEffect } from 'react';
+import type { Collection, Sketch } from '../types';
 import { getCollectionByShareToken, getSketches, getVoteCount, addVote } from '../services/storage/storageManager';
-import { Button } from '../components/ui/Button';
 import { WireframeContainer } from '../components/wireframes/WireframeContainer';
 import './SharedCollection.css';
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Collection } from '../types';
+import { useState, useEffect } from 'react';
+import type { Collection } from '../types';
 import { getAllCollections } from '../services/storage/storageManager';
 import { Button } from '../components/ui/Button';
 import { CollectionCard } from '../components/collection/CollectionCard';
