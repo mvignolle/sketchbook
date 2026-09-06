@@ -14,37 +14,58 @@ function generateSessionId(): string {
 
 // Get or create a session
 export async function getOrCreateSession(): Promise<string> {
+  const useSupabase = import.meta.env.VITE_USE_SUPABASE === 'true';
+
   // Check localStorage first
   const storedSessionId = localStorage.getItem(SESSION_ID_KEY);
   if (storedSessionId) {
-    // Validate session exists in DB
-    const { data } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('id', storedSessionId)
-      .single();
+    // Only validate in DB if using Supabase
+    if (useSupabase) {
+      try {
+        const { data } = await supabase
+          .from('sessions')
+          .select('id')
+          .eq('id', storedSessionId)
+          .single();
 
-    if (data) {
-      // Update last activity
-      await updateSessionActivity(storedSessionId);
+        if (data) {
+          // Update last activity
+          await updateSessionActivity(storedSessionId);
+          return storedSessionId;
+        }
+      } catch (err) {
+        console.warn('Failed to validate session in Supabase:', err);
+        // Fall through to create new session
+      }
+    } else {
+      // Using localStorage only - just return the stored ID
       return storedSessionId;
     }
   }
 
   // Create new session
   const newSessionId = generateSessionId();
-  const { error } = await supabase
-    .from('sessions')
-    .insert({
-      id: newSessionId,
-      is_anonymous: true,
-      device_info: navigator.userAgent,
-      ip_hash: null,
-    });
 
-  if (error) {
-    console.error('Failed to create session:', error);
-    throw error;
+  // Only store in Supabase if using it
+  if (useSupabase) {
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .insert({
+          id: newSessionId,
+          is_anonymous: true,
+          device_info: navigator.userAgent,
+          ip_hash: null,
+        });
+
+      if (error) {
+        console.error('Failed to create session in Supabase:', error);
+        // Continue with localStorage fallback
+      }
+    } catch (err) {
+      console.warn('Could not create Supabase session:', err);
+      // Continue with localStorage fallback
+    }
   }
 
   // Store in localStorage
