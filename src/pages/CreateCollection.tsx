@@ -26,24 +26,24 @@ export const CreateCollection: React.FC<CreateCollectionProps> = ({ onNavigate }
     setStep('generating');
 
     try {
-      const collection = createCollection(title, prompt);
+      const collection = await createCollection(title, prompt);
       setCollectionId(collection.id);
 
-      const group = addGroup(collection.id, 'Exploration 1');
+      const group = await addGroup(collection.id, 'Exploration 1');
       const count = Math.max(1, Math.min(12, parseInt(ideaCount) || 6));
       const sketches = generateSketches(collection.id, group.id, count);
 
-      sketches.forEach(sketch => {
-        saveSketch(sketch);
-      });
+      for (const sketch of sketches) {
+        await saveSketch(sketch);
+      }
 
       collection.metadata.totalSketches = sketches.length;
-      addGenerationRecord(collection.id, {
+      await addGenerationRecord(collection.id, {
         ideaCount: count,
         prompt,
         resultSketchIds: sketches.map(s => s.id),
       });
-      saveCollection(collection);
+      await saveCollection(collection);
 
       setStep('complete');
     } catch (error) {

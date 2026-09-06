@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Sketch, Collection } from '../types';
+import { useState, useEffect } from 'react';
+import type { Sketch, Collection } from '../types';
 import { getCollection, getSketches, getVoteCount, addVote } from '../services/storage/storageManager';
 import { Button } from '../components/ui/Button';
 import { WireframeContainer } from '../components/wireframes/WireframeContainer';
@@ -19,14 +19,23 @@ export const SketchDetail: React.FC<SketchDetailProps> = ({
   const [collection, setCollection] = useState<Collection | null>(null);
   const [sketch, setSketch] = useState<Sketch | null>(null);
   const [sketches, setSketches] = useState<Sketch[]>([]);
+  const [voteCount, setVoteCount] = useState(0);
 
   useEffect(() => {
-    const col = getCollection(collectionId);
-    setCollection(col);
-    const allSketches = getSketches(collectionId);
-    setSketches(allSketches);
-    const found = allSketches.find(s => s.id === sketchId);
-    setSketch(found || null);
+    const loadSketch = async () => {
+      const col = await getCollection(collectionId);
+      setCollection(col);
+      const allSketches = await getSketches(collectionId);
+      setSketches(allSketches);
+      const found = allSketches.find(s => s.id === sketchId);
+      setSketch(found || null);
+
+      if (found) {
+        const votes = await getVoteCount(found.id);
+        setVoteCount(votes);
+      }
+    };
+    loadSketch();
   }, [collectionId, sketchId]);
 
   if (!sketch || !collection) {
@@ -37,9 +46,13 @@ export const SketchDetail: React.FC<SketchDetailProps> = ({
   const prevSketch = currentIndex > 0 ? sketches[currentIndex - 1] : null;
   const nextSketch = currentIndex < sketches.length - 1 ? sketches[currentIndex + 1] : null;
 
-  const handleVote = () => {
-    addVote(collectionId, sketchId);
-    setSketch({ ...sketch, votes: getVoteCount(sketchId) });
+  const handleVote = async () => {
+    try {
+      const newCount = await addVote(collectionId, sketchId);
+      setVoteCount(newCount);
+    } catch (err) {
+      console.error('Failed to vote:', err);
+    }
   };
 
   return (
@@ -77,7 +90,7 @@ export const SketchDetail: React.FC<SketchDetailProps> = ({
 
           <div className="sketch-detail-vote">
             <Button onClick={handleVote} variant="primary" size="large">
-              ▲ Vote ({getVoteCount(sketchId)})
+              ▲ Vote ({voteCount})
             </Button>
           </div>
 

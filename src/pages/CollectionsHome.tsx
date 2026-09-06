@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Collection } from '../types';
+import { useState, useEffect } from 'react';
+import type { Collection } from '../types';
 import { getAllCollections } from '../services/storage/storageManager';
 import { Button } from '../components/ui/Button';
 import { CollectionCard } from '../components/collection/CollectionCard';
@@ -14,8 +14,18 @@ export const CollectionsHome: React.FC<CollectionsHomeProps> = ({ onNavigate }) 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setCollections(getAllCollections());
-    setLoading(false);
+    const loadCollections = async () => {
+      try {
+        const data = await getAllCollections();
+        setCollections(data);
+      } catch (err) {
+        console.error('Failed to load collections:', err);
+        setCollections([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCollections();
   }, []);
 
   const handleCreateNew = () => {

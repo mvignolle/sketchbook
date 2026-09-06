@@ -2,12 +2,12 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #fafafa;
+  background: #1a1a1a;
 }
 
 .app-main {
   flex: 1;
-  background: #fafafa;
+  background: #1a1a1a;
   padding: 24px 0;
 }
 
