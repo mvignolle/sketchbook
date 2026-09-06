@@ -1,0 +1,153 @@
+.sketch-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+}
+
+.back-button:hover {
+  color: #333;
+}
+
+.sketch-detail-container {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.sketch-detail-main {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 24px;
+}
+
+.sketch-canvas-wrapper {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  border-radius: 2px;
+}
+
+.sketch-detail-sidebar {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 80px;
+}
+
+.sketch-detail-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.sketch-detail-description h3,
+.sketch-detail-variations h3 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #999;
+  margin: 0 0 8px 0;
+}
+
+.sketch-detail-description p {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.sketch-detail-variations ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sketch-detail-variations li {
+  font-size: 12px;
+  color: #666;
+  padding-left: 16px;
+  position: relative;
+}
+
+.sketch-detail-variations li:before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #999;
+}
+
+.sketch-detail-vote {
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.sketch-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sketch-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.info-label {
+  color: #999;
+}
+
+.info-value {
+  color: #333;
+  font-weight: 500;
+}
+
+@media (max-width: 1024px) {
+  .sketch-detail-container {
+    grid-template-columns: 1fr;
+  }
+
+  .sketch-detail-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .sketch-detail-main {
+    padding: 16px;
+  }
+
+  .sketch-detail-sidebar {
+    padding: 16px;
+  }
+}

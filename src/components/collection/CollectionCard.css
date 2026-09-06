@@ -1,0 +1,75 @@
+.collection-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 140px;
+}
+
+.collection-card:hover {
+  border-color: #333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.collection-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.collection-card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.collection-card-meta {
+  font-size: 12px;
+  background: #f5f5f5;
+  color: #666;
+  padding: 2px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.collection-card-prompt {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.collection-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 12px;
+}
+
+.collection-card-stats {
+  color: #999;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.stat-separator {
+  color: #ddd;
+}
+
+.collection-card-date {
+  color: #999;
+  font-size: 12px;
+}
